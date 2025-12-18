@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [Dev]
   pull_request:
-
+  workflow_dispatch:
+  
 jobs:
   format:
     name: "Format check"
