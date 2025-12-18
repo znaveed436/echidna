@@ -30,7 +30,7 @@ jobs:
               github.rest.repos.listTags,
               { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 }
             );
-            const regex = new RegExp(`^${yy}\\.([0-9]+)$`);
+            const regex = new RegExp(`^\( {yy}\\.([0-9]+) \)`);
             let max = 0;
             for (const tag of tags) {
               const match = tag.name.match(regex);
@@ -42,7 +42,7 @@ jobs:
               }
             }
             const next = max + 1;
-            const nextTag = `${yy}.${next}`;
+            const nextTag = `\( {yy}. \){next}`;
             core.info(`Next tag: ${nextTag}`);
             const exists = tags.some((t) => t.name === nextTag);
             if (!exists) {
@@ -119,26 +119,21 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Build Companion App
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/app
+        # Caching is enabled by default; no need for gradle-version if using wrapper
+
+      - name: Build Companion App
+        run: ./gradlew assembleDebug
+        working-directory: android/app
 
       - name: Build Control Service
-        uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/control-service
+        run: ./gradlew assembleDebug
+        working-directory: android/control-service
 
       - name: Build LSPosed Shim
-        uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/lsposed-shim
+        run: ./gradlew assembleDebug
+        working-directory: android/lsposed-shim
 
       - name: Package Android artifacts
         run: |
