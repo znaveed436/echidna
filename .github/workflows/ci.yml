@@ -19,6 +19,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format
 
+      # ... (Rest of format job remains unchanged)
       - name: Verify C/C++ formatting
         run: |
           set -euo pipefail
@@ -62,26 +63,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: "Android: run Gradle checks (app)"
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.5
-          arguments: check
-          build-root-directory: android/app
+
+      - name: "Android: run Gradle checks (app)"
+        run: gradle check
+        working-directory: android/app
 
       - name: "Android: run Gradle checks (control service)"
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 8.5
-          arguments: check
-          build-root-directory: android/control-service
+        run: gradle check
+        working-directory: android/control-service
 
       - name: "Android: run Gradle checks (lsposed shim)"
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 8.5
-          arguments: check
-          build-root-directory: android/lsposed-shim
+        run: gradle check
+        working-directory: android/lsposed-shim
 
   native:
     name: "Build native libraries"
@@ -115,26 +112,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Build Companion App
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/app
+
+      - name: Build Companion App
+        run: gradle assembleDebug
+        working-directory: android/app
 
       - name: Build Control Service
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/control-service
+        run: gradle assembleDebug
+        working-directory: android/control-service
 
       - name: Build LSPosed Shim
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: 8.5
-          arguments: assembleDebug
-          build-root-directory: android/lsposed-shim
+        run: gradle assembleDebug
+        working-directory: android/lsposed-shim
 
   smoke-tests:
     name: "Smoke tests (build + artifact checks)"
@@ -165,7 +158,7 @@ jobs:
           if [ ! -f build/zygisk/lib/libechidna.so ]; then
             echo "Missing libechidna.so"; exit 1
           fi
-          # Sanity check symbol exported by DSP
           if ! (readelf -Ws build/dsp/lib/libech_dsp.so | grep -q ech_dsp_initialize); then
             echo "Expected symbol ech_dsp_initialize not found in libech_dsp.so"; exit 1
           fi
+          
