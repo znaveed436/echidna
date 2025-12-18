@@ -143,28 +143,33 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
-        # Caching enabled by default, shared across all builds below
+        with:
+          # Disable the two problematic cache entries that currently cause 404 errors on GitHub's side
+          cache-disabled: |
+            gradle-groovy-dsl
+            gradle-instrumented-jars
+
+      # Assuming a root-level gradlew and multi-module project.
+      # Adjust the project names below if your settings.gradle uses different names
+      # (e.g., include("app"), include("control-service"), etc.)
 
       - name: Build Companion App
-        run: ./gradlew assembleDebug
-        working-directory: android/app
+        run: ./gradlew :app:assembleDebug
 
       - name: Build Control Service
-        run: ./gradlew assembleDebug
-        working-directory: android/control-service
+        run: ./gradlew :control-service:assembleDebug
 
       - name: Build LSPosed Shim
-        run: ./gradlew assembleDebug
-        working-directory: android/lsposed-shim
+        run: ./gradlew :lsposed-shim:assembleDebug
 
       - name: Package Android artifacts
         run: |
           mkdir -p artifacts/android
-          cp android/app/app/build/outputs/apk/debug/app-debug.apk \
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
             artifacts/android/app-debug.apk
-          cp android/control-service/service/build/outputs/aar/service-debug.aar \
+          cp android/control-service/build/outputs/aar/control-service-debug.aar \
             artifacts/android/control-service-debug.aar
-          cp android/lsposed-shim/shim/build/outputs/aar/shim-debug.aar \
+          cp android/lsposed-shim/build/outputs/aar/lsposed-shim-debug.aar \
             artifacts/android/lsposed-shim-debug.aar
 
       - name: Upload Android artifacts
@@ -179,14 +184,4 @@ jobs:
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
-        with:
-          path: release_artifacts
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.tag.outputs.tag }}
-          name: Echidna ${{ needs.tag.outputs.tag }}
-          files: release_artifacts/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with
