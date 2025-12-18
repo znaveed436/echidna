@@ -120,21 +120,21 @@ jobs:
           java-version: "17"
 
       - name: Build Companion App
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: 8.5
           arguments: assembleDebug
           build-root-directory: android/app
 
       - name: Build Control Service
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: 8.5
           arguments: assembleDebug
           build-root-directory: android/control-service
 
       - name: Build LSPosed Shim
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: 8.5
           arguments: assembleDebug
