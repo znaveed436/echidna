@@ -12,7 +12,7 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.tag.outputs.tag }}
+      tag: ${{ steps.tag.outputs.result }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,12 +26,19 @@ jobs:
           script: |
             const now = new Date();
             const yy = String(now.getFullYear()).slice(-2);
+
             const tags = await github.paginate(
               github.rest.repos.listTags,
-              { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 }
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100
+              }
             );
+
             const regex = new RegExp(`^\( {yy}\\.([0-9]+) \)`);
             let max = 0;
+
             for (const tag of tags) {
               const match = tag.name.match(regex);
               if (match) {
@@ -41,19 +48,34 @@ jobs:
                 }
               }
             }
+
             const next = max + 1;
-            const nextTag = `\( {yy}. \){next}`;
-            core.info(`Next tag: ${nextTag}`);
-            const exists = tags.some((t) => t.name === nextTag);
+            const nextTag = yy + '.' + next;
+
+            console.log(`Next tag: ${nextTag}`);
+
+            const exists = tags.some(t => t.name === nextTag);
             if (!exists) {
-              await github.rest.git.createRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/tags/${nextTag}`,
-                sha: context.sha,
-              });
+              try {
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: 'refs/tags/' + nextTag,
+                  sha: context.sha,
+                });
+                console.log(`Tag ${nextTag} created successfully.`);
+              } catch (error) {
+                if (error.status === 422) {
+                  console.log(`Tag ${nextTag} already exists (possible race condition).`);
+                } else {
+                  throw error;
+                }
+              }
+            } else {
+              console.log(`Tag ${nextTag} already exists.`);
             }
-            core.setOutput("tag", nextTag);
+
+            return nextTag;
 
   native:
     runs-on: ubuntu-latest
@@ -121,7 +143,7 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
-        # Caching is enabled by default; no need for gradle-version if using wrapper
+        # Caching enabled by default, shared across all builds below
 
       - name: Build Companion App
         run: ./gradlew assembleDebug
